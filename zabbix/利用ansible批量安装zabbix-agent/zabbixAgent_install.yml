@@ -1,0 +1,32 @@
+
+- name: yum install zabbix-agent
+  hosts: test2
+  remote_user: root
+  pre_tasks:
+#设置zabbix-agent的centos6源，centos7的话类似换掉
+    - name: set epel repo for Centos6
+      command: rpm -Uvh http://repo.zabbix.com/zabbix/4.1/rhel/6/x86_64/zabbix-release-4.1-1.el6.noarch.rpm
+      register: result
+      ignore_errors: yes
+#安装
+  tasks:
+    - name: install zabbix-agent
+      yum:
+        name: "{{item}}"
+        state: installed
+      with_items:
+        - zabbix-agent
+#为自动发现做配置,Hostname改为本地的ip，如要求外网的话就修改localIPget，后面两个替换为zabbix-server的ip
+#######################################如不需要配置自动发现就把这段住宿###########################
+    - name: replace config
+      shell: export localIPget=`hostname -I` && sed -i "s/^Hostname=Zabbix server$/Hostname=${localIPget}/" /etc/zabbix/zabbix_agentd.conf
+      register: result
+      ignore_errors: yes
+    - lineinfile: dest=/etc/zabbix/zabbix_agentd.conf regexp=^Server=127.0.0.1 line=Server=${{ zabbix-server-ip }}
+    - lineinfile: dest=/etc/zabbix/zabbix_agentd.conf regexp=^ServerActive=127.0.0.1 line=ServerActive=${{ zabbix-server-ip }}
+    #- lineinfile: dest=/etc/zabbix/zabbix_agentd.conf regexp=^Hostname=Zabbix line=Hostname=123
+#################################################################################################
+    - name: restart zabbix-agent
+      shell:  service zabbix-agent restart
+      register: result
+      ignore_errors: yes

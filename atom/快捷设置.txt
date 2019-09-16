@@ -1,1 +1,0 @@
-Ctrl + Shift + M 预览文档 （装了markdown插件后就是预览结果）
